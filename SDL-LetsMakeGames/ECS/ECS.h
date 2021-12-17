@@ -21,14 +21,18 @@ class Component;
 //A class that acts a collection of components
 class Entity;
 
+class Manager;
+
 //typedef for the component ID type
 using ComponentID = std::size_t;
 
+using Group = std::size_t;
+
 //Returns next usable unique ID
-inline ComponentID getComponentTypeID()
+inline ComponentID getNewComponentTypeID()
 {
 	//static allows each call of this function to refer to the same "lastID"
-	static ComponentID lastID = 0;
+	static ComponentID lastID = 0u;
 	return lastID++;
 }
 
@@ -36,15 +40,19 @@ inline ComponentID getComponentTypeID()
 //Calling this function multiple times with the ***same type "T"*** will return the same results
 template <typename T> inline ComponentID getComponentTypeID() noexcept
 {
-	static ComponentID typeID = getComponentTypeID();
+	static ComponentID typeID = getNewComponentTypeID();
 	return typeID;
 }
 
 //Maximum number of components
 constexpr std::size_t maxComponents = 32;
 
+constexpr std::size_t maxGroups = 32;
+
 //typedef a bitset of maxComponents
 using ComponentBitSet = std::bitset<maxComponents>;
+
+using GroupBitSet = std::bitset<maxGroups>;
 
 //typedef an array of component pointers with maxComponents bitset
 using ComponentArray = std::array<Component*, maxComponents>;
@@ -65,6 +73,7 @@ public:
 class Entity
 {
 private:
+	Manager& manager;
 	bool active = true;
 
 	//vector of unique pointers to Components
@@ -74,7 +83,11 @@ private:
 	ComponentArray componentArray;
 	//Bitset to check the existence of a component with a specific ID
 	ComponentBitSet componentBitSet;
+
+	GroupBitSet groupBitSet;
 public:
+	Entity(Manager& mManager) : manager(mManager) {}
+
 	void update()
 	{
 		for (auto& c : components) c->update();
@@ -86,6 +99,17 @@ public:
 
 	bool isActive() const { return active; }
 	void destroy() { active = false; }
+
+	bool hasGroup(Group mGroup)
+	{
+		return groupBitSet[mGroup];
+	}
+
+	void addGroup(Group mGroup);
+	void deleteGroup(Group mGroup)
+	{
+		groupBitSet[mGroup] = false;
+	}
 
 	//Checks if this entity has a component by checking the bitset for a specific ID
 	template <typename T> bool hasComponent() const
@@ -133,6 +157,7 @@ class Manager
 private:
 	//vector of unique pointers to Entities
 	std::vector<std::unique_ptr<Entity>> entities;
+	std::array<std::vector<Entity*>, maxGroups> groupedEntities;
 
 public:
 	void update()
@@ -148,6 +173,18 @@ public:
 	//Cleans up "dead" entities
 	void refresh()
 	{
+		for (auto i(0u); i < maxGroups; i++)
+		{
+			auto& v(groupedEntities[i]);
+			v.erase(
+				std::remove_if(std::begin(v), std::end(v), [i](Entity* mEntity)
+					{
+						return !mEntity->isActive() || !mEntity->hasGroup(i);
+					}),
+
+				std::end(v));
+		}
+
 		entities.erase(std::remove_if(std::begin(entities), std::end(entities),
 			[](const std::unique_ptr<Entity> &mEntity)
 		{
@@ -156,9 +193,19 @@ public:
 			std::end(entities));
 	}
 
+	void addToGroup(Entity* mEntity, Group mGroup)
+	{
+		groupedEntities[mGroup].emplace_back(mEntity);
+	}
+
+	std::vector<Entity*>& getGroup(Group mGroup)
+	{
+		return groupedEntities[mGroup];
+	}
+
 	Entity& addEntity()
 	{
-		Entity* e = new Entity();
+		Entity* e = new Entity(*this);
 
 		//Wraps the above pointer into a smart pointer and places it into the vector
 		std::unique_ptr<Entity> uPtr{ e };

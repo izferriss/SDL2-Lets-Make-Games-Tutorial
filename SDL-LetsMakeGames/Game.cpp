@@ -9,13 +9,22 @@ Map* map;
 Manager manager;
 
 SDL_Renderer* Game::renderer = nullptr;
+
+//SDL Event handler
 SDL_Event Game::e;
 
 std::vector<ColliderComponent*> Game::colliders;
 
 auto& player(manager.addEntity());
-auto& wall(manager.addEntity());
 
+//Define groups
+enum groupLabels : std::size_t
+{
+	groupMap,
+	groupPlayers,
+	groupEnemies,
+	groupColliders
+};
 
 Game::Game()
 {}
@@ -83,25 +92,19 @@ void Game::init(const char* title, int x, int y, int w, int h, bool fullScreen)
 	map = new Map();
 
 	//ECS implementation
+	Map::loadMap("assets/map/25x20_world.map", 25, 20);
 
 	player.addComponent<TransformComponent>(2);
-	player.addComponent<SpriteComponent>("assets/charSheets/player/idle.png");
+	player.addComponent<SpriteComponent>("assets/charSheets/player/playerSheet.png", true);
 	player.addComponent<KeyboardController>();
 	player.addComponent<ColliderComponent>("player");
-
-	wall.addComponent<TransformComponent>(300.0f, 300.0f, 300, 20, 1);
-	wall.addComponent<SpriteComponent>("assets/map/dirt.png");
-	wall.addComponent<ColliderComponent>("wall");
-	
+	player.addGroup(groupPlayers);
 
 }//end game::init()
 
 //Handles SDL-driven events.
 void Game::handleEvents()
 {
-	//SDL Event handler
-	
-
 	//Polls for pending events
 	SDL_PollEvent(&e);
 
@@ -127,6 +130,13 @@ void Game::update()
 	}
 }//end game::update()
 
+
+//Lists of objects in groups
+auto& tiles(manager.getGroup(groupMap));
+auto& players(manager.getGroup(groupPlayers));
+auto& enemies(manager.getGroup(groupEnemies));
+
+
 //Renders objects to the window.
 void Game::render()
 {
@@ -134,7 +144,18 @@ void Game::render()
 	SDL_RenderClear(renderer);
 
 	//Textures to be rendered
-	manager.draw();
+	for (auto& t : tiles)
+	{
+		t->draw();
+	}
+	for (auto& p : players)
+	{
+		p->draw();
+	}
+	for (auto& e : enemies)
+	{
+		e->draw();
+	}
 
 	//Updates screen
 	SDL_RenderPresent(renderer);
@@ -153,4 +174,5 @@ void Game::addTile(int id, int x, int y)
 {
 	auto& tile(manager.addEntity());
 	tile.addComponent<TileComponent>(x, y, 32, 32, id);
+	tile.addGroup(groupMap);
 }
