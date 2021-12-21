@@ -13,9 +13,15 @@ SDL_Renderer* Game::renderer = nullptr;
 //SDL Event handler
 SDL_Event Game::e;
 
+SDL_Rect Game::camera = {0, 0, 800, 160};
+
 std::vector<ColliderComponent*> Game::colliders;
 
+bool Game::isRunning = false;
+
 auto& player(manager.addEntity());
+
+const char* mapFile = "assets/map/dungeonTiles.png";
 
 //Define groups
 enum groupLabels : std::size_t
@@ -25,6 +31,11 @@ enum groupLabels : std::size_t
 	groupEnemies,
 	groupColliders
 };
+
+//Lists of objects in groups
+auto& tiles(manager.getGroup(groupMap));
+auto& players(manager.getGroup(groupPlayers));
+auto& enemies(manager.getGroup(groupEnemies));
 
 Game::Game()
 {}
@@ -92,9 +103,9 @@ void Game::init(const char* title, int x, int y, int w, int h, bool fullScreen)
 	map = new Map();
 
 	//ECS implementation
-	Map::loadMap("assets/map/25x20_world.map", 25, 20);
+	Map::loadMap("assets/map/dungeon.map", 50, 25);
 
-	player.addComponent<TransformComponent>(2);
+	player.addComponent<TransformComponent>(1);
 	player.addComponent<SpriteComponent>("assets/charSheets/player/playerSheet.png", true);
 	player.addComponent<KeyboardController>();
 	player.addComponent<ColliderComponent>("player");
@@ -124,17 +135,31 @@ void Game::update()
 
 	manager.refresh();
 	manager.update();
-	for (auto cc : colliders)
+
+	camera.x = player.getComponent<TransformComponent>().position.x - 400;
+	camera.y = player.getComponent<TransformComponent>().position.y - 320;
+
+	if (camera.x < 0)
 	{
-		Collision::AABB(player.getComponent<ColliderComponent>(), *cc);
+		camera.x = 0;
 	}
+	if (camera.y < 0)
+	{
+		camera.y = 0;
+	}
+	if (camera.x >= camera.w)
+	{
+		camera.x = camera.w;
+	}
+	if (camera.y >= camera.h)
+	{
+		camera.y = camera.h;
+	}
+
 }//end game::update()
 
 
-//Lists of objects in groups
-auto& tiles(manager.getGroup(groupMap));
-auto& players(manager.getGroup(groupPlayers));
-auto& enemies(manager.getGroup(groupEnemies));
+
 
 
 //Renders objects to the window.
@@ -170,9 +195,9 @@ void Game::clean()
 	std::cout << "Game cleaned!" << std::endl;
 }//end game::clean()
 
-void Game::addTile(int id, int x, int y)
+void Game::addTile(int srcX, int srcY, int xPos, int yPos)
 {
 	auto& tile(manager.addEntity());
-	tile.addComponent<TileComponent>(x, y, 32, 32, id);
+	tile.addComponent<TileComponent>(srcX, srcY, xPos, yPos, mapFile);
 	tile.addGroup(groupMap);
 }

@@ -24,7 +24,8 @@ public:
 
 	TransformComponent(int scale)
 	{
-		position.zero();
+		position.x = 400;
+		position.y = 320;
 		this->scale = scale;
 	}
 

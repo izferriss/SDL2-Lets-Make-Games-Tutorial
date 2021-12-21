@@ -20,13 +20,16 @@ public:
 
 	bool running() { return isRunning; }
 
-	static void addTile(int id, int x, int y);
+	static void addTile(int srcX, int srcY, int xPos, int yPos);
 	static SDL_Renderer* renderer;
 	static SDL_Event e;
 	static std::vector<ColliderComponent*> colliders;
+	static bool isRunning;
+
+	static SDL_Rect camera;
 
 private:
-	bool isRunning;
+	
 	SDL_Window* window;
 
 };

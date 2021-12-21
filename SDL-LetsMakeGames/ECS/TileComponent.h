@@ -1,51 +1,49 @@
 #pragma once
 
 #include "ECS.h"
-#include "TransformComponent.h"
-#include "SpriteComponent.h"
 #include "SDL.h"
 
 class TileComponent : public Component
 {
 public:
-	TransformComponent *transform;
-	SpriteComponent *sprite;
 
-	SDL_Rect tileRect;
-	int tileID;
-	const char* path;
+	SDL_Texture* texture;
+	SDL_Rect srcRect, dstRect;
+	Vector2D position;
 
 	TileComponent() = default;
-	TileComponent(int x, int y, int w, int h, int id)
-	{
-		tileRect.x = x;
-		tileRect.y = y;
-		tileRect.w = w;
-		tileRect.h = h;
-		tileID = id;
 
-		switch (tileID)
-		{
-		case 0: //water
-			path = "assets/map/water.png";
-			break;
-		case 1: //dirt
-			path = "assets/map/dirt.png";
-			break;
-		case 2: //grass
-			path = "assets/map/grass.png";
-			break;
-		default:
-			break;
-		}
+	~TileComponent()
+	{
+		SDL_DestroyTexture(texture);
 	}
 
-	void init() override
+	TileComponent(int srcX, int srcY, int xPos, int yPos, const char* path)
 	{
-		entity->addComponent<TransformComponent>((float)tileRect.x, (float)tileRect.y, tileRect.h, tileRect.w, 1);
-		transform = &entity->getComponent<TransformComponent>();
+		texture = TextureManager::loadTexture(path);
 
-		entity->addComponent<SpriteComponent>(path);
-		sprite = &entity->getComponent<SpriteComponent>();
+		position.x = xPos;
+		position.y = yPos;
+
+		srcRect.x = srcX;
+		srcRect.y = srcY;
+		srcRect.w = 32;
+		srcRect.h = 32;
+
+		dstRect.x = xPos;
+		dstRect.y = yPos;
+		dstRect.w = 32;
+		dstRect.h = 32;
+	}
+
+	void update() override
+	{
+		dstRect.x = position.x - Game::camera.x;
+		dstRect.y = position.y - Game::camera.y;
+	}
+
+	void draw() override
+	{
+		TextureManager::draw(texture, srcRect, dstRect, SDL_FLIP_NONE);
 	}
 };

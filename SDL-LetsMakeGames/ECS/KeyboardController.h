@@ -21,9 +21,6 @@ public:
 		{
 			switch (Game::e.key.keysym.sym)
 			{
-			case SDLK_ESCAPE:
-				Game::e.type = SDL_QUIT;
-				break;
 			case SDLK_w: //up
 				transform->velocity.y = -1;
 				sprite->play("walkUp");
@@ -64,6 +61,9 @@ public:
 			case SDLK_s: //down
 				transform->velocity.y = 0;
 				sprite->play("idle");
+				break;
+			case SDLK_ESCAPE:
+				Game::isRunning = false;
 				break;
 			default:
 				break;

@@ -23,6 +23,8 @@ public:
 
 	std::map<const char*, Animation> animations;
 
+	SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
+
 	SpriteComponent() = default;
 	SpriteComponent(const char* path)
 	{
@@ -78,15 +80,15 @@ public:
 
 		srcRect.y = animationIndex * transform->height;
 
-		dstRect.x = static_cast<int>(transform->position.x);
-		dstRect.y = static_cast<int>(transform->position.y);
+		dstRect.x = static_cast<int>(transform->position.x) - Game::camera.x;
+		dstRect.y = static_cast<int>(transform->position.y) - Game::camera.y;
 		dstRect.w = transform->width * transform->scale;
 		dstRect.h = transform->height * transform->scale;
 	}
 
 	void draw() override
 	{
-		TextureManager::draw(texture, srcRect, dstRect);
+		TextureManager::draw(texture, srcRect, dstRect, spriteFlip);
 	}
 
 	void play(const char* animationName)
