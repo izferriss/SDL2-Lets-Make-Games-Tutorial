@@ -20,13 +20,19 @@ public:
 
 	bool running() { return isRunning; }
 
-	static void addTile(int srcX, int srcY, int xPos, int yPos);
 	static SDL_Renderer* renderer;
 	static SDL_Event e;
-	static std::vector<ColliderComponent*> colliders;
 	static bool isRunning;
 
 	static SDL_Rect camera;
+
+	//Define groups
+	enum groupLabels : std::size_t
+	{
+		groupMap,
+		groupPlayers,
+		groupColliders
+	};
 
 private:
 	
