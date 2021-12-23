@@ -4,6 +4,7 @@
 #include "ECS/Components.h"
 #include "Vector2D.h"
 #include "Collision.h"
+#include "AssetManager.h"
 
 Map* map;
 Manager manager;
@@ -14,6 +15,8 @@ SDL_Renderer* Game::renderer = nullptr;
 SDL_Event Game::e;
 
 SDL_Rect Game::camera = {0, 0, 800, 160};
+
+AssetManager* Game::assets = new AssetManager(&manager);
 
 bool Game::isRunning = false;
 
@@ -81,23 +84,32 @@ void Game::init(const char* title, int x, int y, int w, int h, bool fullScreen)
 		isRunning = false;
 	}
 
+	assets->addTexture("terrain", "assets/map/dungeonTiles.png");
+	assets->addTexture("player", "assets/charSheets/player/playerSheet.png");
+	assets->addTexture("projectile", "assets/projectiles/test.png");
 
-	map = new Map("assets/map/dungeonTiles.png", 1, 32);
+	map = new Map("terrain", 1, 32);
 
 	//ECS implementation
 	map->loadMap("assets/map/dungeon.map", 50, 25);
 
 	player.addComponent<TransformComponent>(1);
-	player.addComponent<SpriteComponent>("assets/charSheets/player/playerSheet.png", true);
+	player.addComponent<SpriteComponent>("player", true);
 	player.addComponent<KeyboardController>();
 	player.addComponent<ColliderComponent>("player");
 	player.addGroup(groupPlayers);
+
+	assets->createProjectile(Vector2D(100, 100), Vector2D(1, 0), 1200, 1, "projectile");
+	assets->createProjectile(Vector2D(120, 120), Vector2D(2, 1), 1200, 1, "projectile");
+	assets->createProjectile(Vector2D(300, 300), Vector2D(-1, 3), 3200, 1, "projectile");
+	assets->createProjectile(Vector2D(400, 400), Vector2D(-1, 3), 3200, 1, "projectile");
 
 }//end game::init()
 
 auto& tiles(manager.getGroup(Game::groupMap));
 auto& players(manager.getGroup(Game::groupPlayers));
 auto& colliders(manager.getGroup(Game::groupColliders));
+auto& projectiles(manager.getGroup(Game::groupProjectiles));
 
 //Handles SDL-driven events.
 void Game::handleEvents()
@@ -133,8 +145,17 @@ void Game::update()
 		}
 	}
 
-	camera.x = player.getComponent<TransformComponent>().position.x - 400;
-	camera.y = player.getComponent<TransformComponent>().position.y - 320;
+	for (auto& p : projectiles)
+	{
+		if (Collision::AABB(player.getComponent<ColliderComponent>().collider, p->getComponent<ColliderComponent>().collider))
+		{
+			std::cout << "projectile hit player" << std::endl;
+			p->destroy();
+		}
+	}
+
+	camera.x = static_cast<int>(player.getComponent<TransformComponent>().position.x - 400);
+	camera.y = static_cast<int>(player.getComponent<TransformComponent>().position.y - 320);
 
 	if (camera.x < 0)
 	{
@@ -174,10 +195,15 @@ void Game::render()
 	{
 		p->draw();
 	}
+	for (auto& p : projectiles)
+	{
+		p->draw();
+	}
 
 
 	//Updates screen
 	SDL_RenderPresent(renderer);
+
 }//end game::render()
 
 //Destroys our window, renderer, and exits SDL subsystems.

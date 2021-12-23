@@ -4,6 +4,7 @@
 #include "../TextureManager.h"
 #include "Animation.h"
 #include <map>
+#include "AssetManager.h"
 
 //Inherits from Component class
 class SpriteComponent : public Component
@@ -26,12 +27,12 @@ public:
 	SDL_RendererFlip spriteFlip = SDL_FLIP_NONE;
 
 	SpriteComponent() = default;
-	SpriteComponent(const char* path)
+	SpriteComponent(std::string id)
 	{
-		setTexture(path);
+		setTexture(id);
 	}
 
-	SpriteComponent(const char* path, bool isAnimated)
+	SpriteComponent(std::string id, bool isAnimated)
 	{
 		animated = isAnimated;
 		Animation idle = Animation(0, 8, 100);
@@ -48,17 +49,15 @@ public:
 
 
 		play("idle");
-		setTexture(path);
+		setTexture(id);
 	}
 
 	~SpriteComponent()
-	{
-		SDL_DestroyTexture(texture);
-	}
+	{}
 
-	void setTexture(const char* path)
+	void setTexture(std::string id)
 	{
-		texture = TextureManager::loadTexture(path);
+		texture = Game::assets->getTexture(id);
 	}
 
 	void init() override

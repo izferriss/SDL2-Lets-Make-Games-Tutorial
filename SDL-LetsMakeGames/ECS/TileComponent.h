@@ -18,12 +18,12 @@ public:
 		SDL_DestroyTexture(texture);
 	}
 
-	TileComponent(int srcX, int srcY, int xPos, int yPos, int tileSize, int tileScale, const char* path)
+	TileComponent(int srcX, int srcY, int xPos, int yPos, int tileSize, int tileScale, std::string id)
 	{
-		texture = TextureManager::loadTexture(path);
+		texture = Game::assets->getTexture(id);
 
-		position.x = xPos;
-		position.y = yPos;
+		position.x = static_cast<float>(xPos);
+		position.y = static_cast<float>(yPos);
 
 		srcRect.x = srcX;
 		srcRect.y = srcY;
@@ -38,8 +38,8 @@ public:
 
 	void update() override
 	{
-		dstRect.x = position.x - Game::camera.x;
-		dstRect.y = position.y - Game::camera.y;
+		dstRect.x = static_cast<int>(position.x - Game::camera.x);
+		dstRect.y = static_cast<int>(position.y - Game::camera.y);
 	}
 
 	void draw() override
